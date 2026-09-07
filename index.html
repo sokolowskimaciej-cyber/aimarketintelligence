@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Market Intelligence — Systematic, AI-Driven Market Analysis</title>
+<meta name="description" content="AI Market Intelligence delivers systematic, data-driven market analysis: regime detection, quantitative strategy research, and AI-powered insight for FX, gold and index markets.">
+<style>
+  :root{
+    --bg:#0b0f17;
+    --bg-2:#101624;
+    --panel:#161e30;
+    --line:rgba(148,170,220,.14);
+    --text:#e8edf6;
+    --muted:#9aa7bd;
+    --accent:#4da3ff;
+    --accent-2:#37e0b8;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+
+  /* Nav */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:rgba(11,15,23,.82);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;color:var(--text);letter-spacing:.2px}
+  .logo-mark{
+    width:30px;height:30px;border-radius:8px;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:grid;place-items:center;font-size:.8rem;font-weight:800;color:#08101d;
+  }
+  nav ul{display:flex;gap:26px;list-style:none}
+  nav a{color:var(--muted);font-size:.92rem;transition:color .2s}
+  nav a:hover{color:var(--text)}
+  .btn{
+    display:inline-block;padding:11px 22px;border-radius:10px;font-weight:600;font-size:.95rem;
+    background:linear-gradient(135deg,var(--accent),#2f7fe0);color:#fff;
+    transition:transform .15s, box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(77,163,255,.35)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn.ghost:hover{border-color:var(--accent);box-shadow:none}
+
+  /* Hero */
+  .hero{
+    position:relative;overflow:hidden;
+    padding:110px 0 90px;
+    background:
+      radial-gradient(700px 400px at 75% 10%,rgba(77,163,255,.16),transparent 60%),
+      radial-gradient(500px 350px at 15% 90%,rgba(55,224,184,.10),transparent 60%),
+      var(--bg);
+  }
+  .hero .wrap{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
+  .eyebrow{
+    display:inline-block;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent-2);font-weight:700;margin-bottom:18px;
+  }
+  h1{font-size:clamp(2rem,4.6vw,3.1rem);line-height:1.15;font-weight:800;letter-spacing:-.5px}
+  h1 .grad{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lead{margin:22px 0 32px;font-size:1.13rem;color:var(--muted);max-width:34em}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+
+  /* Hero chart card */
+  .chart-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .chart-card .card-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .chart-card .card-head span{font-size:.8rem;color:var(--muted)}
+  .chart-card .regime{font-size:.78rem;font-weight:700;color:var(--accent-2);background:rgba(55,224,184,.12);padding:4px 10px;border-radius:99px}
+  .chart-card svg{width:100%;height:auto;display:block}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+  .stat{background:var(--bg-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .stat b{display:block;font-size:1.05rem}
+  .stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+  /* Sections */
+  section{padding:88px 0}
+  .sec-head{max-width:640px;margin-bottom:48px}
+  .sec-head .eyebrow{margin-bottom:10px}
+  h2{font-size:clamp(1.5rem,3vw,2.1rem);font-weight:800;letter-spacing:-.3px;margin-bottom:12px}
+  .sec-head p{color:var(--muted)}
+
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:28px;transition:transform .2s,border-color .2s;
+  }
+  .card:hover{transform:translateY(-4px);border-color:rgba(77,163,255,.4)}
+  .card .icon{
+    width:44px;height:44px;border-radius:11px;margin-bottom:18px;
+    display:grid;place-items:center;font-size:1.25rem;
+    background:linear-gradient(135deg,rgba(77,163,255,.18),rgba(55,224,184,.14));
+    border:1px solid var(--line);
+  }
+  .card h3{font-size:1.08rem;margin-bottom:10px}
+  .card p{font-size:.94rem;color:var(--muted)}
+
+  /* Approach */
+  .approach{background:var(--bg-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;counter-reset:step}
+  .step{position:relative;padding:24px 22px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+  .step::before{
+    counter-increment:step;content:counter(step,decimal-leading-zero);
+    display:block;font-size:.8rem;font-weight:800;color:var(--accent);margin-bottom:12px;letter-spacing:.1em;
+  }
+  .step h3{font-size:1rem;margin-bottom:8px}
+  .step p{font-size:.88rem;color:var(--muted)}
+
+  /* About */
+  .about .wrap{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+  .about ul{list-style:none;margin-top:20px;display:grid;gap:12px}
+  .about li{display:flex;gap:12px;align-items:flex-start;color:var(--muted);font-size:.97rem}
+  .about li::before{content:"✓";color:var(--accent-2);font-weight:800;flex:0 0 auto}
+  .quote{
+    background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:var(--radius);padding:30px;font-size:1.05rem;color:var(--text);
+  }
+  .quote footer{margin-top:14px;font-size:.85rem;color:var(--muted)}
+
+  /* Contact */
+  .contact{background:
+    radial-gradient(600px 300px at 50% 0%,rgba(77,163,255,.12),transparent 60%),var(--bg-2);
+    border-top:1px solid var(--line);text-align:center}
+  .contact .sec-head{margin:0 auto 32px}
+  .contact-box{max-width:480px;margin:0 auto;display:grid;gap:14px}
+  .contact-line{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;font-size:1rem}
+  .contact-line span{color:var(--muted);font-size:.85rem;display:block;margin-bottom:2px}
+
+  footer.site{border-top:1px solid var(--line);padding:28px 0;font-size:.85rem;color:var(--muted)}
+  footer.site .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  .disclaimer{font-size:.78rem;color:#77839a;max-width:760px;margin:18px auto 0}
+
+  @media (max-width:900px){
+    .hero .wrap,.about .wrap{grid-template-columns:1fr}
+    .grid-3{grid-template-columns:1fr}
+    .steps{grid-template-columns:1fr 1fr}
+    nav ul{display:none}
+    .hero{padding:70px 0 60px}
+    section{padding:64px 0}
+  }
+  @media (max-width:540px){
+    .steps{grid-template-columns:1fr}
+    .stat-row{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="logo"><span class="logo-mark">AI</span> AI Market Intelligence</div>
+    <nav>
+      <ul>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#approach">Approach</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+    <a class="btn" href="#contact">Get in touch</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">AI-powered market analysis</span>
+      <h1>See the market the way <span class="grad">machines</span> see it.</h1>
+      <p class="lead">AI Market Intelligence turns raw price data into clear, actionable insight — regime detection, quantitative strategy research and systematic analysis for FX, gold and index markets.</p>
+      <div class="hero-cta">
+        <a class="btn" href="#contact">Work with us</a>
+        <a class="btn ghost" href="#services">Explore services</a>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="card-head">
+        <span>XAUUSD · Daily</span>
+        <span class="regime">● Bull regime</span>
+      </div>
+      <svg viewBox="0 0 420 200" role="img" aria-label="Illustrative market chart">
+        <defs>
+          <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4da3ff" stop-opacity=".35"/>
+            <stop offset="100%" stop-color="#4da3ff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polyline fill="none" stroke="rgba(148,170,220,.12)" stroke-width="1" points="0,50 420,50"/>
+        <polyline fill="none" stroke="rgba(148,170,220,.12)" stroke-width="1" points="0,100 420,100"/>
+        <polyline fill="none" stroke="rgba(148,170,220,.12)" stroke-width="1" points="0,150 420,150"/>
+        <path d="M0,160 L30,150 L60,158 L90,135 L120,142 L150,120 L180,128 L210,100 L240,110 L270,84 L300,92 L330,66 L360,74 L390,48 L420,40 L420,200 L0,200 Z" fill="url(#fill)"/>
+        <path d="M0,160 L30,150 L60,158 L90,135 L120,142 L150,120 L180,128 L210,100 L240,110 L270,84 L300,92 L330,66 L360,74 L390,48 L420,40" fill="none" stroke="#4da3ff" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M0,170 L60,166 L120,158 L180,146 L240,130 L300,110 L360,88 L420,64" fill="none" stroke="#37e0b8" stroke-width="1.6" stroke-dasharray="5 5"/>
+        <circle cx="420" cy="40" r="4" fill="#4da3ff"/>
+      </svg>
+      <div class="stat-row">
+        <div class="stat"><b>3 states</b><span>Regime model</span></div>
+        <div class="stat"><b>Walk-forward</b><span>Validation</span></div>
+        <div class="stat"><b>24/5</b><span>Market coverage</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="services">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">What we do</span>
+      <h2>Intelligence, not noise.</h2>
+      <p>We apply machine learning and rigorous statistics to the markets — so decisions rest on evidence, not opinion.</p>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="icon">📊</div>
+        <h3>Market Regime Analysis</h3>
+        <p>Markov-based regime detection that classifies markets as trending, ranging or volatile — and quantifies how likely each state is to persist.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🤖</div>
+        <h3>AI-Driven Research</h3>
+        <p>Machine learning applied to price, volatility and macro data to surface patterns and relationships human analysis misses.</p>
+      </div>
+      <div class="card">
+        <div class="icon">⚙️</div>
+        <h3>Systematic Strategy Development</h3>
+        <p>Rule-based strategies engineered end-to-end: entries, exits, risk controls and position sizing — built to be testable and repeatable.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🧪</div>
+        <h3>Backtest Validation</h3>
+        <p>Honest evaluation of any strategy: realistic costs, out-of-sample testing, walk-forward analysis and Monte Carlo stress tests.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🛡️</div>
+        <h3>Risk &amp; Portfolio Review</h3>
+        <p>Position sizing, drawdown control and portfolio construction — including modelling against prop-firm rules and account limits.</p>
+      </div>
+      <div class="card">
+        <div class="icon">📈</div>
+        <h3>Market Intelligence Reports</h3>
+        <p>Clear, data-driven briefings on FX, gold and indices: current regime, key levels, statistical context and what actually matters.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="approach" class="approach">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">How we work</span>
+      <h2>Evidence first. Always.</h2>
+      <p>Every insight we publish goes through the same disciplined pipeline.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <h3>Data</h3>
+        <p>Clean, verified market data — gap-checked, session-tagged and cost-adjusted before any analysis begins.</p>
+      </div>
+      <div class="step">
+        <h3>Model</h3>
+        <p>Statistical and machine-learning models built to answer one question precisely, not everything vaguely.</p>
+      </div>
+      <div class="step">
+        <h3>Validate</h3>
+        <p>Out-of-sample tests, walk-forward analysis and stress testing — if it doesn't survive scrutiny, it doesn't ship.</p>
+      </div>
+      <div class="step">
+        <h3>Deliver</h3>
+        <p>Findings translated into plain language and clear, actionable intelligence you can actually use.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about" class="about">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">About</span>
+      <h2>Built by practitioners, powered by AI.</h2>
+      <p style="color:var(--muted)">AI Market Intelligence was founded on a simple conviction: most market commentary is opinion dressed up as analysis. We do it differently — every view we take is grounded in data, tested statistically and stated with its uncertainty attached.</p>
+      <ul>
+        <li>Specialist focus on FX, gold and index markets</li>
+        <li>Quantitative methods: regime models, machine learning, statistical validation</li>
+        <li>Deep practical experience in systematic and algorithmic trading</li>
+        <li>Independent — no broker affiliations, no signal-selling hype</li>
+      </ul>
+    </div>
+    <div class="quote">
+      “The market doesn't care what anyone thinks. It leaves evidence — our job is to read it properly.”
+      <footer>— AI Market Intelligence</footer>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="contact">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Contact</span>
+      <h2>Let's talk markets.</h2>
+      <p>For enquiries about research, analysis or collaboration, get in touch.</p>
+    </div>
+    <div class="contact-box">
+      <div class="contact-line"><span>Email</span><a href="mailto:info@aimarketintelligence.co.uk">info@aimarketintelligence.co.uk</a></div>
+      <div class="contact-line"><span>Based in</span>United Kingdom</div>
+    </div>
+    <p class="disclaimer">AI Market Intelligence provides research and analysis for informational and educational purposes only. Nothing on this site constitutes financial advice or a recommendation to buy or sell any financial instrument. Trading involves substantial risk of loss.</p>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="wrap">
+    <div>© 2026 AI Market Intelligence · aimarketintelligence.co.uk</div>
+    <div><a href="#services">Services</a> · <a href="#approach">Approach</a> · <a href="#contact">Contact</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
