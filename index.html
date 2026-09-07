@@ -87,12 +87,11 @@
   .stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 
   /* Globe */
-  .globe-sec{padding:40px 0 0;text-align:center;overflow:hidden}
+  .globe-sec{padding:40px 0 24px;text-align:center}
   .globe-sec .eyebrow{margin-bottom:6px}
   .globe-sec p.globe-cap{color:var(--muted);font-size:.95rem;max-width:38em;margin:0 auto}
-  .globe-wrap{position:relative;width:min(640px,92vw);margin:8px auto -120px;aspect-ratio:1}
+  .globe-wrap{position:relative;width:min(600px,88vw);margin:16px auto 0;aspect-ratio:1}
   .globe-wrap canvas{width:100%;height:100%;display:block;contain:layout paint size}
-  .globe-fade{position:absolute;inset:auto 0 0 0;height:38%;background:linear-gradient(180deg,transparent,var(--bg));pointer-events:none}
   .globe-cities{display:flex;gap:10px 22px;justify-content:center;flex-wrap:wrap;margin-top:10px;position:relative;z-index:2}
   .globe-cities span{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .globe-cities span::before{content:"●";color:var(--accent-2);margin-right:7px;font-size:.6rem;vertical-align:1px}
@@ -234,7 +233,6 @@
     </div>
     <div class="globe-wrap">
       <canvas id="globe"></canvas>
-      <div class="globe-fade"></div>
     </div>
   </div>
 </section>
