@@ -92,9 +92,10 @@
   .globe-sec p.globe-cap{color:var(--muted);font-size:.95rem;max-width:38em;margin:0 auto}
   .globe-wrap{position:relative;width:min(600px,88vw);margin:16px auto 0;aspect-ratio:1}
   .globe-wrap canvas{width:100%;height:100%;display:block;contain:layout paint size}
-  .globe-cities{display:flex;gap:10px 22px;justify-content:center;flex-wrap:wrap;margin-top:10px;position:relative;z-index:2}
+  .globe-cities{display:flex;gap:10px 22px;justify-content:center;flex-wrap:wrap;margin-top:18px;position:relative;z-index:2}
   .globe-cities span{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .globe-cities span::before{content:"●";color:var(--accent-2);margin-right:7px;font-size:.6rem;vertical-align:1px}
+  .globe-cities b{color:var(--text);font-weight:600;margin-left:4px;letter-spacing:.04em}
 
   /* Sections */
   section{padding:88px 0}
@@ -228,11 +229,11 @@
 <section class="globe-sec" aria-label="Global market coverage">
   <div class="wrap">
     <span class="eyebrow">Global coverage</span>
-    <div class="globe-cities">
-      <span>London</span><span>New York</span><span>Tokyo</span><span>Sydney</span><span>Frankfurt</span><span>Singapore</span>
-    </div>
     <div class="globe-wrap">
       <canvas id="globe"></canvas>
+    </div>
+    <div class="globe-cities" id="globe-clocks">
+      <span>London</span><span>New York</span><span>Tokyo</span><span>Sydney</span><span>Frankfurt</span><span>Singapore</span>
     </div>
   </div>
 </section>
@@ -350,55 +351,161 @@
 </footer>
 
 <script type="module">
+  // Live clocks under the globe (independent of the globe itself)
+  const CITIES = [
+    { name: 'London',    lat: 51.51,  lon: -0.13,  tz: 'Europe/London' },
+    { name: 'New York',  lat: 40.71,  lon: -74.01, tz: 'America/New_York' },
+    { name: 'Tokyo',     lat: 35.68,  lon: 139.69, tz: 'Asia/Tokyo' },
+    { name: 'Sydney',    lat: -33.87, lon: 151.21, tz: 'Australia/Sydney' },
+    { name: 'Frankfurt', lat: 50.11,  lon: 8.68,   tz: 'Europe/Berlin' },
+    { name: 'Singapore', lat: 1.35,   lon: 103.82, tz: 'Asia/Singapore' },
+    { name: 'Hong Kong', lat: 22.32,  lon: 114.17, tz: 'Asia/Hong_Kong', minor: true },
+    { name: 'Zurich',    lat: 47.38,  lon: 8.54,   tz: 'Europe/Zurich',  minor: true },
+    { name: 'Dubai',     lat: 25.20,  lon: 55.27,  tz: 'Asia/Dubai',     minor: true },
+    { name: 'Chicago',   lat: 41.88,  lon: -87.63, tz: 'America/Chicago', minor: true }
+  ];
+
+  const D2R = Math.PI / 180;
+  const vec = (lat, lon) => { const p = lat * D2R, l = lon * D2R; return [Math.cos(p) * Math.cos(l), Math.sin(p), Math.cos(p) * Math.sin(l)]; };
+
   try {
-    const { default: createGlobe } = await import('https://cdn.jsdelivr.net/npm/cobe@0.6.4/+esm');
+    const clockRow = document.getElementById('globe-clocks');
+    const clocks = CITIES.filter(c => !c.minor).map(c => ({
+      c,
+      hm: new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: c.tz })
+    }));
+    const tick = () => {
+      const now = new Date();
+      clockRow.innerHTML = clocks.map(({ c, hm }) => `<span>${c.name} <b>${hm.format(now)}</b></span>`).join('');
+    };
+    tick(); setInterval(tick, 10000);
+  } catch (e) { /* clocks are decorative */ }
+
+  // Globe: dotted land, arcs between cities, pinging markers
+  try {
     const canvas = document.getElementById('globe');
     const wrap = canvas.parentElement;
-    let phi = 0, visible = true, size = 0, globe = null;
+    const ctx = canvas.getContext('2d');
+    const cityVecs = CITIES.map(c => vec(c.lat, c.lon));
+    const ARCS = [[0, 1], [0, 4], [0, 8], [8, 5], [5, 6], [6, 2], [2, 3], [1, 9]];
 
-    const markers = [
-      { location: [51.51, -0.13], size: 0.08 },   // London
-      { location: [40.71, -74.01], size: 0.08 },  // New York
-      { location: [35.68, 139.69], size: 0.08 },  // Tokyo
-      { location: [-33.87, 151.21], size: 0.07 }, // Sydney
-      { location: [50.11, 8.68], size: 0.06 },    // Frankfurt
-      { location: [1.35, 103.82], size: 0.06 },   // Singapore
-      { location: [22.32, 114.17], size: 0.06 },  // Hong Kong
-      { location: [47.38, 8.54], size: 0.05 },    // Zurich
-      { location: [25.20, 55.27], size: 0.05 },   // Dubai
-      { location: [41.88, -87.63], size: 0.06 }   // Chicago
-    ];
-
-    function build() {
-      const w = wrap.clientWidth;
-      if (globe && Math.abs(w - size) < 4) return;
-      size = w;
-      if (globe) globe.destroy();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      globe = createGlobe(canvas, {
-        devicePixelRatio: dpr,
-        width: size * dpr,
-        height: size * dpr,
-        phi: 0,
-        theta: 0.22,
-        dark: 1,
-        diffuse: 1.2,
-        mapSamples: 22000,
-        mapBrightness: 5.2,
-        baseColor: [0.22, 0.30, 0.46],
-        markerColor: [0.22, 0.88, 0.72],
-        glowColor: [0.07, 0.13, 0.24],
-        markers,
-        onRender: (state) => {
-          if (visible) phi += 0.0035;
-          state.phi = phi;
+    // Build land dot grid from a world land mask (rasterized topojson)
+    const topo = await (await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')).json();
+    const { feature } = await import('https://cdn.jsdelivr.net/npm/topojson-client@3/+esm');
+    const landFC = feature(topo, topo.objects.land);
+    const geoms = landFC.type === 'FeatureCollection' ? landFC.features.map(f => f.geometry) : [landFC.geometry];
+    const RW = 1024, RH = 512;
+    const off = document.createElement('canvas'); off.width = RW; off.height = RH;
+    const octx = off.getContext('2d', { willReadFrequently: true });
+    octx.fillStyle = '#fff';
+    for (const g of geoms) {
+      const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+      for (const poly of polys) {
+        octx.beginPath();
+        for (const ring of poly) {
+          ring.forEach(([lon, lat], i) => {
+            const x = (lon + 180) / 360 * RW, y = (90 - lat) / 180 * RH;
+            i ? octx.lineTo(x, y) : octx.moveTo(x, y);
+          });
+          octx.closePath();
         }
-      });
+        octx.fill('evenodd');
+      }
+    }
+    const mask = octx.getImageData(0, 0, RW, RH).data;
+    const isLand = (lat, lon) => {
+      const x = Math.min(RW - 1, Math.max(0, ((lon + 180) / 360 * RW) | 0));
+      const y = Math.min(RH - 1, Math.max(0, ((90 - lat) / 180 * RH) | 0));
+      return mask[(y * RW + x) * 4 + 3] > 128;
+    };
+    const dots = [];
+    const STEP = 1.9;
+    for (let lat = -88; lat <= 88; lat += STEP) {
+      const lonStep = STEP / Math.max(Math.cos(lat * D2R), 0.08);
+      for (let lon = -180; lon < 180; lon += lonStep) if (isLand(lat, lon)) dots.push(vec(lat, lon));
     }
 
-    build();
-    addEventListener('resize', build);
+    const TILT = 0.28, CT = Math.cos(TILT), ST = Math.sin(TILT);
+    const proj = (p, cs, sn) => {
+      const x = p[0] * cs + p[2] * sn, z = -p[0] * sn + p[2] * cs, y = p[1];
+      return [x, y * CT - z * ST, y * ST + z * CT];
+    };
+
+    let phi = 0, visible = true, size = 0, dpr = 1;
+    const fit = () => {
+      size = wrap.clientWidth;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = size * dpr; canvas.height = size * dpr;
+    };
+    fit(); addEventListener('resize', fit);
     new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(wrap);
+
+    function frame(t) {
+      requestAnimationFrame(frame);
+      if (!visible || !size) return;
+      phi += 0.0022;
+      const cs = Math.cos(phi), sn = Math.sin(phi);
+      const R = size * 0.46, cx = size / 2, cy = size / 2, sc = size / 640;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, size, size);
+
+      // Atmosphere glow + sphere base
+      let g = ctx.createRadialGradient(cx, cy, R * 0.7, cx, cy, R * 1.12);
+      g.addColorStop(0, 'rgba(40,80,160,0.10)'); g.addColorStop(0.85, 'rgba(50,110,200,0.16)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.12, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(12,19,34,0.92)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
+
+      // Land dots
+      ctx.fillStyle = 'rgb(150,186,235)';
+      for (const p of dots) {
+        const q = proj(p, cs, sn);
+        if (q[2] <= 0.02) continue;
+        ctx.globalAlpha = 0.30 + 0.55 * q[2];
+        ctx.beginPath(); ctx.arc(cx + q[0] * R, cy - q[1] * R, 1.15 * sc, 0, 7); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Arcs between financial centres with a travelling pulse
+      const AT = t / 1000;
+      ctx.lineCap = 'round';
+      ARCS.forEach((pair, ai) => {
+        const A = cityVecs[pair[0]], B = cityVecs[pair[1]];
+        const dp = A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
+        const ang = Math.acos(Math.min(1, dp)), sa = Math.sin(ang) || 1e-6;
+        const N = 44, pts = [];
+        for (let i = 0; i <= N; i++) {
+          const u = i / N, w1 = Math.sin((1 - u) * ang) / sa, w2 = Math.sin(u * ang) / sa;
+          const lift = 1 + 0.20 * Math.sin(Math.PI * u) * Math.min(1, ang / 1.5);
+          pts.push(proj([(A[0] * w1 + B[0] * w2) * lift, (A[1] * w1 + B[1] * w2) * lift, (A[2] * w1 + B[2] * w2) * lift], cs, sn));
+        }
+        const head = ((AT * 0.10) + ai * 0.37) % 1;
+        for (let i = 0; i < N; i++) {
+          const p1 = pts[i], p2 = pts[i + 1];
+          if (p1[2] < 0.04 || p2[2] < 0.04) continue;
+          let d = head - i / N; if (d < 0) d += 1;
+          const pulse = Math.max(0, 1 - d * 5);
+          ctx.strokeStyle = `rgba(55,224,184,${0.10 + 0.55 * pulse})`;
+          ctx.lineWidth = (0.7 + 1.5 * pulse) * sc;
+          ctx.beginPath(); ctx.moveTo(cx + p1[0] * R, cy - p1[1] * R); ctx.lineTo(cx + p2[0] * R, cy - p2[1] * R); ctx.stroke();
+        }
+      });
+
+      // City markers with expanding ping rings
+      CITIES.forEach((c, i) => {
+        const q = proj(cityVecs[i], cs, sn);
+        if (q[2] < 0.05) return;
+        const mx = cx + q[0] * R, my = cy - q[1] * R, ms = (c.minor ? 2.1 : 3.1) * sc;
+        const ring = ((AT * 0.6) + i * 0.31) % 1;
+        ctx.strokeStyle = `rgba(55,224,184,${(1 - ring) * 0.45})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(mx, my, ms + ring * 11 * sc, 0, 7); ctx.stroke();
+        const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3);
+        mg.addColorStop(0, 'rgba(55,224,184,0.85)'); mg.addColorStop(1, 'rgba(55,224,184,0)');
+        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, 7); ctx.fill();
+        ctx.fillStyle = '#7df0d4'; ctx.beginPath(); ctx.arc(mx, my, ms, 0, 7); ctx.fill();
+      });
+    }
+    requestAnimationFrame(frame);
   } catch (e) { /* globe is decorative; page works without it */ }
 </script>
 </body>
