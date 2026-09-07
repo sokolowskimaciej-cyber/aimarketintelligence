@@ -86,6 +86,17 @@
   .stat b{display:block;font-size:1.05rem}
   .stat span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 
+  /* Globe */
+  .globe-sec{padding:40px 0 0;text-align:center;overflow:hidden}
+  .globe-sec .eyebrow{margin-bottom:6px}
+  .globe-sec p.globe-cap{color:var(--muted);font-size:.95rem;max-width:38em;margin:0 auto}
+  .globe-wrap{position:relative;width:min(640px,92vw);margin:8px auto -120px;aspect-ratio:1}
+  .globe-wrap canvas{width:100%;height:100%;display:block;contain:layout paint size}
+  .globe-fade{position:absolute;inset:auto 0 0 0;height:38%;background:linear-gradient(180deg,transparent,var(--bg));pointer-events:none}
+  .globe-cities{display:flex;gap:10px 22px;justify-content:center;flex-wrap:wrap;margin-top:10px;position:relative;z-index:2}
+  .globe-cities span{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .globe-cities span::before{content:"●";color:var(--accent-2);margin-right:7px;font-size:.6rem;vertical-align:1px}
+
   /* Sections */
   section{padding:88px 0}
   .sec-head{max-width:640px;margin-bottom:48px}
@@ -215,6 +226,19 @@
   </div>
 </section>
 
+<section class="globe-sec" aria-label="Global market coverage">
+  <div class="wrap">
+    <span class="eyebrow">Global coverage</span>
+    <div class="globe-cities">
+      <span>London</span><span>New York</span><span>Tokyo</span><span>Sydney</span><span>Frankfurt</span><span>Singapore</span>
+    </div>
+    <div class="globe-wrap">
+      <canvas id="globe"></canvas>
+      <div class="globe-fade"></div>
+    </div>
+  </div>
+</section>
+
 <section id="services">
   <div class="wrap">
     <div class="sec-head">
@@ -327,5 +351,57 @@
   </div>
 </footer>
 
+<script type="module">
+  try {
+    const { default: createGlobe } = await import('https://cdn.jsdelivr.net/npm/cobe@0.6.4/+esm');
+    const canvas = document.getElementById('globe');
+    const wrap = canvas.parentElement;
+    let phi = 0, visible = true, size = 0, globe = null;
+
+    const markers = [
+      { location: [51.51, -0.13], size: 0.08 },   // London
+      { location: [40.71, -74.01], size: 0.08 },  // New York
+      { location: [35.68, 139.69], size: 0.08 },  // Tokyo
+      { location: [-33.87, 151.21], size: 0.07 }, // Sydney
+      { location: [50.11, 8.68], size: 0.06 },    // Frankfurt
+      { location: [1.35, 103.82], size: 0.06 },   // Singapore
+      { location: [22.32, 114.17], size: 0.06 },  // Hong Kong
+      { location: [47.38, 8.54], size: 0.05 },    // Zurich
+      { location: [25.20, 55.27], size: 0.05 },   // Dubai
+      { location: [41.88, -87.63], size: 0.06 }   // Chicago
+    ];
+
+    function build() {
+      const w = wrap.clientWidth;
+      if (globe && Math.abs(w - size) < 4) return;
+      size = w;
+      if (globe) globe.destroy();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      globe = createGlobe(canvas, {
+        devicePixelRatio: dpr,
+        width: size * dpr,
+        height: size * dpr,
+        phi: 0,
+        theta: 0.22,
+        dark: 1,
+        diffuse: 1.2,
+        mapSamples: 22000,
+        mapBrightness: 5.2,
+        baseColor: [0.22, 0.30, 0.46],
+        markerColor: [0.22, 0.88, 0.72],
+        glowColor: [0.07, 0.13, 0.24],
+        markers,
+        onRender: (state) => {
+          if (visible) phi += 0.0035;
+          state.phi = phi;
+        }
+      });
+    }
+
+    build();
+    addEventListener('resize', build);
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(wrap);
+  } catch (e) { /* globe is decorative; page works without it */ }
+</script>
 </body>
 </html>
