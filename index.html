@@ -366,7 +366,7 @@
   ];
 
   const D2R = Math.PI / 180;
-  const vec = (lat, lon) => { const p = lat * D2R, l = lon * D2R; return [Math.cos(p) * Math.cos(l), Math.sin(p), Math.cos(p) * Math.sin(l)]; };
+  const vec = (lat, lon) => { const p = lat * D2R, l = lon * D2R; return [Math.cos(p) * Math.cos(l), Math.sin(p), -Math.cos(p) * Math.sin(l)]; };
 
   try {
     const clockRow = document.getElementById('globe-clocks');
@@ -390,11 +390,11 @@
     const ARCS = [[0, 1], [0, 4], [0, 8], [8, 5], [5, 6], [6, 2], [2, 3], [1, 9]];
 
     // Build land dot grid from a world land mask (rasterized topojson)
-    const topo = await (await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')).json();
+    const topo = await (await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json')).json();
     const { feature } = await import('https://cdn.jsdelivr.net/npm/topojson-client@3/+esm');
     const landFC = feature(topo, topo.objects.land);
     const geoms = landFC.type === 'FeatureCollection' ? landFC.features.map(f => f.geometry) : [landFC.geometry];
-    const RW = 1024, RH = 512;
+    const RW = 2048, RH = 1024;
     const off = document.createElement('canvas'); off.width = RW; off.height = RH;
     const octx = off.getContext('2d', { willReadFrequently: true });
     octx.fillStyle = '#fff';
@@ -419,7 +419,7 @@
       return mask[(y * RW + x) * 4 + 3] > 128;
     };
     const dots = [];
-    const STEP = 1.9;
+    const STEP = 1.6;
     for (let lat = -88; lat <= 88; lat += STEP) {
       const lonStep = STEP / Math.max(Math.cos(lat * D2R), 0.08);
       for (let lon = -180; lon < 180; lon += lonStep) if (isLand(lat, lon)) dots.push(vec(lat, lon));
@@ -484,7 +484,7 @@
           if (p1[2] < 0.04 || p2[2] < 0.04) continue;
           let d = head - i / N; if (d < 0) d += 1;
           const pulse = Math.max(0, 1 - d * 5);
-          ctx.strokeStyle = `rgba(55,224,184,${0.10 + 0.55 * pulse})`;
+          ctx.strokeStyle = `rgba(246,196,83,${0.12 + 0.6 * pulse})`;
           ctx.lineWidth = (0.7 + 1.5 * pulse) * sc;
           ctx.beginPath(); ctx.moveTo(cx + p1[0] * R, cy - p1[1] * R); ctx.lineTo(cx + p2[0] * R, cy - p2[1] * R); ctx.stroke();
         }
