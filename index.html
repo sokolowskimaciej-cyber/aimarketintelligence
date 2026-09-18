@@ -130,6 +130,40 @@
   .step h3{font-size:1rem;margin-bottom:8px}
   .step p{font-size:.88rem;color:var(--muted)}
 
+  /* Performance */
+  .perf-badge{
+    display:inline-block;margin:0 0 26px;padding:8px 16px;border-radius:99px;
+    background:rgba(246,196,83,.10);border:1px solid rgba(246,196,83,.35);
+    color:#f6c453;font-size:.82rem;font-weight:600;letter-spacing:.04em;
+  }
+  .perf-tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+  .perf-tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .perf-tile b{display:block;font-size:1.35rem;letter-spacing:-.3px}
+  .perf-tile b.pos{color:var(--accent-2)}
+  .perf-tile b.neg{color:#ff7d7d}
+  .perf-tile span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .perf-chart{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:22px}
+  .perf-chart canvas{width:100%;height:320px;display:block}
+  .perf-cols{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:start}
+  .perf-monthly{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:10px}
+  .perf-month{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center}
+  .perf-month span{display:block;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+  .perf-month b{font-size:.95rem}
+  .perf-trades{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px 20px}
+  .perf-trades table{width:100%;border-collapse:collapse;font-size:.9rem}
+  .perf-trades th{text-align:left;color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;padding:10px 8px;border-bottom:1px solid var(--line)}
+  .perf-trades td{padding:9px 8px;border-bottom:1px solid rgba(148,170,220,.07)}
+  .perf-trades tr:last-child td{border-bottom:none}
+  .perf-trades .pos{color:var(--accent-2)}
+  .perf-trades .neg{color:#ff7d7d}
+  .perf-updated{margin-top:16px;font-size:.78rem;color:#77839a}
+  .pos-val{color:var(--accent-2)}
+  .neg-val{color:#ff7d7d}
+  @media (max-width:900px){
+    .perf-tiles{grid-template-columns:repeat(2,1fr)}
+    .perf-cols{grid-template-columns:1fr}
+  }
+
   /* About */
   .about .wrap{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
   .about ul{list-style:none;margin-top:20px;display:grid;gap:12px}
@@ -178,6 +212,7 @@
       <ul>
         <li><a href="#services">Services</a></li>
         <li><a href="#approach">Approach</a></li>
+        <li><a href="#performance">Performance</a></li>
         <li><a href="#about">About</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
@@ -305,6 +340,32 @@
         <p>Findings translated into plain language and clear, actionable intelligence you can actually use.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="performance" hidden>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Track record</span>
+      <h2>Portfolio performance.</h2>
+      <p>Results from our systematic MT5 algo portfolio, shown net in percent. Closed trades only — updated automatically.</p>
+    </div>
+    <div class="perf-badge" id="perf-badge" hidden>⚠ Illustrative sample data — live track record connecting soon</div>
+    <div class="perf-tiles" id="perf-tiles"></div>
+    <div class="perf-chart"><canvas id="perf-canvas"></canvas></div>
+    <div class="perf-cols">
+      <div>
+        <div class="perf-monthly" id="perf-monthly"></div>
+      </div>
+      <div class="perf-trades">
+        <table>
+          <thead><tr><th>Date</th><th>Market</th><th>Side</th><th>Result</th></tr></thead>
+          <tbody id="perf-trades-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="perf-updated" id="perf-updated"></p>
+    <p class="disclaimer" style="margin-top:14px;text-align:left">Past performance is not indicative of future results. Figures are net of costs, expressed as a percentage of account equity, and relate to closed positions only.</p>
   </div>
 </section>
 
@@ -507,6 +568,105 @@
     }
     requestAnimationFrame(frame);
   } catch (e) { /* globe is decorative; page works without it */ }
+</script>
+<script type="module">
+  // Track-record section: renders data/performance.json; section stays hidden if it is missing
+  try {
+    const res = await fetch('data/performance.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('no data');
+    const d = await res.json();
+    const sec = document.getElementById('performance');
+    sec.hidden = false;
+    if (d.demo) document.getElementById('perf-badge').hidden = false;
+
+    const fmtPct = (v, signed = true) => `${signed && v > 0 ? '+' : ''}${v.toFixed(v % 1 === 0 ? 0 : 1)}%`;
+    const cls = v => v >= 0 ? 'pos' : 'neg';
+
+    // Stat tiles
+    const s = d.stats;
+    document.getElementById('perf-tiles').innerHTML = [
+      [fmtPct(s.totalReturnPct), 'Total return', cls(s.totalReturnPct)],
+      [fmtPct(s.maxDrawdownPct, false), 'Max drawdown', 'neg'],
+      [`${s.winRatePct}%`, 'Win rate', ''],
+      [s.profitFactor.toFixed(2), 'Profit factor', ''],
+      [s.trades, 'Closed trades', '']
+    ].map(([v, l, c]) => `<div class="perf-tile"><b class="${c}">${v}</b><span>${l}</span></div>`).join('');
+
+    // Monthly grid
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    document.getElementById('perf-monthly').innerHTML = d.monthly.map(([ym, v]) => {
+      const [y, m] = ym.split('-');
+      return `<div class="perf-month"><span>${MN[+m - 1]} ${y.slice(2)}</span><b class="${cls(v)}-val">${fmtPct(v)}</b></div>`;
+    }).join('');
+
+    // Recent closed trades
+    document.getElementById('perf-trades-body').innerHTML = d.trades.map(([dt, sym, side, pct]) =>
+      `<tr><td>${dt}</td><td>${sym}</td><td>${side}</td><td class="${cls(pct)}">${fmtPct(pct)}</td></tr>`
+    ).join('');
+
+    document.getElementById('perf-updated').textContent =
+      `Last updated ${new Date(d.updated).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} · tracking since ${d.start}`;
+
+    // Equity curve
+    const canvas = document.getElementById('perf-canvas');
+    const ctx = canvas.getContext('2d');
+    const pts = d.equity.map(([t, v]) => ({ t: new Date(t), v }));
+    function draw() {
+      const W = canvas.clientWidth, H = 320, dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      const padL = 46, padR = 16, padT = 18, padB = 30;
+      const iw = W - padL - padR, ih = H - padT - padB;
+      let lo = Math.min(...pts.map(p => p.v)), hi = Math.max(...pts.map(p => p.v));
+      const span = Math.max(hi - lo, 1); lo -= span * 0.08; hi += span * 0.08;
+      const X = i => padL + iw * i / (pts.length - 1);
+      const Y = v => padT + ih * (1 - (v - lo) / (hi - lo));
+
+      // gridlines + y labels
+      ctx.strokeStyle = 'rgba(148,170,220,0.10)'; ctx.fillStyle = '#9aa7bd';
+      ctx.font = '11px Segoe UI'; ctx.textAlign = 'right'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const v = lo + (hi - lo) * i / 4, y = Y(v);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+        ctx.fillText(`${(v - 100).toFixed(0) > 0 ? '+' : ''}${(v - 100).toFixed(0)}%`, padL - 8, y + 4);
+      }
+      // x labels: month starts
+      ctx.textAlign = 'center';
+      let lastM = -1;
+      pts.forEach((p, i) => {
+        const m = p.t.getMonth();
+        if (m !== lastM) { lastM = m; ctx.fillText(MN[m], X(i), H - 8); }
+      });
+      // baseline at 0%
+      ctx.strokeStyle = 'rgba(148,170,220,0.28)'; ctx.setLineDash([5, 5]);
+      ctx.beginPath(); ctx.moveTo(padL, Y(100)); ctx.lineTo(W - padR, Y(100)); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // area fill + gold line
+      const grad = ctx.createLinearGradient(0, padT, 0, H - padB);
+      grad.addColorStop(0, 'rgba(246,196,83,0.22)'); grad.addColorStop(1, 'rgba(246,196,83,0)');
+      ctx.beginPath();
+      pts.forEach((p, i) => i ? ctx.lineTo(X(i), Y(p.v)) : ctx.moveTo(X(i), Y(p.v)));
+      ctx.lineTo(X(pts.length - 1), H - padB); ctx.lineTo(X(0), H - padB); ctx.closePath();
+      ctx.fillStyle = grad; ctx.fill();
+      ctx.beginPath();
+      pts.forEach((p, i) => i ? ctx.lineTo(X(i), Y(p.v)) : ctx.moveTo(X(i), Y(p.v)));
+      ctx.strokeStyle = '#f6c453'; ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.stroke();
+
+      // end dot + value chip
+      const lp = pts[pts.length - 1], lx = X(pts.length - 1), ly = Y(lp.v);
+      ctx.fillStyle = '#f6c453'; ctx.beginPath(); ctx.arc(lx, ly, 4, 0, 7); ctx.fill();
+      const label = `${lp.v - 100 > 0 ? '+' : ''}${(lp.v - 100).toFixed(1)}%`;
+      ctx.font = '600 12px Segoe UI';
+      const tw = ctx.measureText(label).width + 14;
+      const bx = Math.min(lx - tw / 2, W - padR - tw), by = Math.max(ly - 32, 4);
+      ctx.fillStyle = 'rgba(246,196,83,0.14)'; ctx.strokeStyle = 'rgba(246,196,83,0.5)';
+      ctx.beginPath(); ctx.roundRect(bx, by, tw, 20, 6); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f6c453'; ctx.textAlign = 'center'; ctx.fillText(label, bx + tw / 2, by + 14);
+    }
+    draw(); addEventListener('resize', draw);
+  } catch (e) { /* section stays hidden without data */ }
 </script>
 </body>
 </html>
