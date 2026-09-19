@@ -28,8 +28,9 @@ except ImportError:
 SITE_DIR = Path(__file__).resolve().parents[1]
 OUT_FILE = SITE_DIR / "data" / "performance.json"
 TERMINAL = r"C:\Fusion Markets MetaTrader 5\terminal64.exe"  # which MT5 install to read
-TRACK_SINCE = datetime(2026, 1, 1, tzinfo=timezone.utc)  # adjust to your go-live date
-RECENT_TRADES = 8
+TRACK_SINCE = datetime(2026, 10, 1, tzinfo=timezone.utc)  # live tracking starts here
+TRADES_WINDOW_DAYS = 30
+TRADES_MAX = 12
 
 
 def main():
@@ -92,14 +93,17 @@ def main():
         monthly.append([ym, round((month_last[ym] / prev - 1) * 100, 1)])
         prev = month_last[ym]
 
-    # Recent closed trades as % of equity at the time
+    # Closed trades in the last 30 days, as % of equity at the time
+    cutoff = datetime.now(timezone.utc) - timedelta(days=TRADES_WINDOW_DAYS)
     recent = []
     bal = start_balance
     rows = []
     for d in closed:
         rows.append((d, bal))
         bal += pnl(d)
-    for d, bal_before in rows[-RECENT_TRADES:][::-1]:
+    for d, bal_before in rows[::-1]:
+        if datetime.fromtimestamp(d.time, tz=timezone.utc) < cutoff or len(recent) >= TRADES_MAX:
+            break
         side = "Sell" if d.type == mt5.DEAL_TYPE_SELL else "Buy"
         recent.append([
             datetime.fromtimestamp(d.time, tz=timezone.utc).strftime("%Y-%m-%d"),
@@ -107,7 +111,6 @@ def main():
         ])
 
     out = {
-        "demo": False,
         "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "start": TRACK_SINCE.strftime("%Y-%m-%d"),
         "equity": equity,
