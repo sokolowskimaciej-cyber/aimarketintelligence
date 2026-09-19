@@ -27,6 +27,7 @@ except ImportError:
 
 SITE_DIR = Path(__file__).resolve().parents[1]
 OUT_FILE = SITE_DIR / "data" / "performance.json"
+TERMINAL = r"C:\Fusion Markets MetaTrader 5\terminal64.exe"  # which MT5 install to read
 TRACK_SINCE = datetime(2026, 1, 1, tzinfo=timezone.utc)  # adjust to your go-live date
 RECENT_TRADES = 8
 
@@ -36,7 +37,8 @@ def main():
     ap.add_argument("--push", action="store_true", help="git commit + push after export")
     args = ap.parse_args()
 
-    if not mt5.initialize():
+    # Attach to the running terminal first; fall back to launching the Fusion install
+    if not mt5.initialize(timeout=60000) and not mt5.initialize(path=TERMINAL, timeout=90000):
         sys.exit(f"MT5 initialize failed: {mt5.last_error()}")
 
     acc = mt5.account_info()
