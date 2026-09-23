@@ -356,7 +356,7 @@
       <h2>Portfolio performance.</h2>
       <p>An algo portfolio run like a hedge fund — combining AI, quantitative research and algorithmic trading strategies, diversified across indices, commodities and FX pairs. Figures are shown net, in percent of equity.</p>
     </div>
-    <div class="perf-badge" id="perf-badge">Jan – Sep 2026: simulated (backtested) performance &nbsp;·&nbsp; from Oct 2026: live account results</div>
+    <div class="perf-badge" id="perf-badge">Jan – Aug 2026: simulated (backtested) performance &nbsp;·&nbsp; from Sep 2026: live account results</div>
     <div class="perf-tiles" id="perf-tiles"></div>
     <div class="perf-chart"><canvas id="perf-canvas"></canvas></div>
     <div class="perf-cols">
@@ -373,7 +373,7 @@
       </div>
     </div>
     <p class="perf-updated" id="perf-updated"></p>
-    <p class="disclaimer" style="margin-top:14px;text-align:left">Past performance is not indicative of future results. January – September 2026 figures are simulated (backtested) performance, which has inherent limitations and does not represent actual trading; live account results are shown from October 2026. Figures are net of costs, expressed as a percentage of account equity, and relate to closed positions only.</p>
+    <p class="disclaimer" style="margin-top:14px;text-align:left">Past performance is not indicative of future results. January – August 2026 figures are simulated (backtested) performance, which has inherent limitations and does not represent actual trading; live account results are shown from 23 September 2026. Figures are net of costs, expressed as a percentage of account equity, and relate to closed positions only.</p>
   </div>
 </section>
 
@@ -625,7 +625,7 @@
       [fmtPct(avg), 'Avg monthly', cls(avg)],
       [`${pos}/${vals.length}`, 'Positive months', ''],
       tile4,
-      ['Oct 2026', 'Live results from', '']
+      [live ? `${MN[new Date(live.start).getUTCMonth()]} ${new Date(live.start).getUTCFullYear()}` : 'Sep 2026', 'Live results from', '']
     ].map(([v, l, c]) => `<div class="perf-tile"><b class="${c}">${v}</b><span>${l}</span></div>`).join('');
 
     // Monthly grid (backtest months gold-marked, live months teal-marked)
@@ -640,10 +640,10 @@
     document.getElementById('perf-trades-body').innerHTML = trades.length
       ? trades.map(([dt, sym, side, pct]) =>
           `<tr><td>${dt}</td><td>${sym}</td><td>${side}</td><td class="${cls(pct)}">${fmtPct(pct)}</td></tr>`).join('')
-      : `<tr><td colspan="4" style="color:var(--muted);padding:18px 8px">Live trading commences October 2026 — closed trades will appear here automatically.</td></tr>`;
+      : `<tr><td colspan="4" style="color:var(--muted);padding:18px 8px">Closed trades from the live account appear here automatically.</td></tr>`;
 
     document.getElementById('perf-updated').textContent =
-      `Last updated ${new Date(live ? live.updated : Date.now()).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} · simulated Jan – Sep 2026 · live account results from Oct 2026`;
+      `Last updated ${new Date(live ? live.updated : Date.now()).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} · simulated Jan – Aug 2026 · live account results from 23 Sep 2026`;
 
     // Equity curve (dashed = simulated backtest, solid = live)
     const canvas = document.getElementById('perf-canvas');

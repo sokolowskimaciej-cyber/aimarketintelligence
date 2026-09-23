@@ -28,7 +28,8 @@ except ImportError:
 SITE_DIR = Path(__file__).resolve().parents[1]
 OUT_FILE = SITE_DIR / "data" / "performance.json"
 TERMINAL = r"C:\Fusion Markets MetaTrader 5\terminal64.exe"  # which MT5 install to read
-TRACK_SINCE = datetime(2026, 10, 1, tzinfo=timezone.utc)  # live tracking starts here
+EXPECTED_LOGIN = 465866  # Fusion Markets account; abort if another account is connected
+TRACK_SINCE = datetime(2026, 9, 23, tzinfo=timezone.utc)  # live tracking starts here
 TRADES_WINDOW_DAYS = 30
 TRADES_MAX = 12
 
@@ -38,11 +39,14 @@ def main():
     ap.add_argument("--push", action="store_true", help="git commit + push after export")
     args = ap.parse_args()
 
-    # Attach to the running terminal first; fall back to launching the Fusion install
-    if not mt5.initialize(timeout=60000) and not mt5.initialize(path=TERMINAL, timeout=90000):
+    # Always attach to the Fusion Markets terminal specifically (other terminals may be running)
+    if not mt5.initialize(path=TERMINAL, timeout=90000):
         sys.exit(f"MT5 initialize failed: {mt5.last_error()}")
 
     acc = mt5.account_info()
+    if acc is not None and EXPECTED_LOGIN and acc.login != EXPECTED_LOGIN:
+        mt5.shutdown()
+        sys.exit(f"Connected account {acc.login} is not the expected Fusion account {EXPECTED_LOGIN} - aborting")
     deals = mt5.history_deals_get(TRACK_SINCE, datetime.now(timezone.utc) + timedelta(days=1))
     mt5.shutdown()
     if acc is None or deals is None:
@@ -104,7 +108,8 @@ def main():
     for d, bal_before in rows[::-1]:
         if datetime.fromtimestamp(d.time, tz=timezone.utc) < cutoff or len(recent) >= TRADES_MAX:
             break
-        side = "Sell" if d.type == mt5.DEAL_TYPE_SELL else "Buy"
+        # The closing deal's direction is opposite to the position's direction
+        side = "Buy" if d.type == mt5.DEAL_TYPE_SELL else "Sell"
         recent.append([
             datetime.fromtimestamp(d.time, tz=timezone.utc).strftime("%Y-%m-%d"),
             d.symbol, side, round(pnl(d) / bal_before * 100, 2),
