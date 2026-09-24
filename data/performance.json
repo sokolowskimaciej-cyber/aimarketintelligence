@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-24T15:00:02+00:00",
+  "updated": "2026-09-24T16:00:02+00:00",
   "start": "2026-09-23",
   "equity": [
     [
@@ -12,23 +12,35 @@
     ],
     [
       "2026-09-24",
-      98.39
+      98.08
     ]
   ],
   "stats": {
-    "totalReturnPct": -1.6,
-    "maxDrawdownPct": -1.6,
-    "winRatePct": 25,
-    "profitFactor": 0.42,
-    "trades": 24
+    "totalReturnPct": -1.9,
+    "maxDrawdownPct": -1.9,
+    "winRatePct": 23,
+    "profitFactor": 0.37,
+    "trades": 26
   },
   "monthly": [
     [
       "2026-09",
-      -1.6
+      -1.9
     ]
   ],
   "trades": [
+    [
+      "2026-09-24",
+      "BTCUSD",
+      "Sell",
+      -0.14
+    ],
+    [
+      "2026-09-24",
+      "BTCUSD",
+      "Sell",
+      -0.18
+    ],
     [
       "2026-09-24",
       "BTCUSD",
@@ -88,18 +100,6 @@
       "USDJPY",
       "Buy",
       -0.17
-    ],
-    [
-      "2026-09-24",
-      "US500",
-      "Buy",
-      -0.18
-    ],
-    [
-      "2026-09-23",
-      "BTCUSD",
-      "Sell",
-      0.21
     ]
   ]
 }
