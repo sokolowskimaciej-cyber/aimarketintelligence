@@ -143,7 +143,17 @@
   .perf-tile b.neg{color:#ff7d7d}
   .perf-tile span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
   .perf-chart{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:22px}
-  .perf-chart canvas{width:100%;height:320px;display:block}
+  .perf-chart canvas{width:100%;height:300px;display:block}
+  .perf-chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .perf-key{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted)}
+  .perf-key span{display:inline-block;width:22px;height:0;margin-left:10px}
+  .perf-key span:first-child{margin-left:0}
+  .key-bt{border-top:2px dashed #f6c453}
+  .key-live{border-top:2.5px solid var(--accent-2)}
+  .perf-cum{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .perf-cum b{font-size:1.05rem;margin-left:6px;letter-spacing:0}
+  .perf-cum b.pos{color:var(--accent-2)}
+  .perf-cum b.neg{color:#ff7d7d}
   .perf-cols{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:start}
   .perf-monthly{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:10px}
   .perf-month{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center}
@@ -358,7 +368,13 @@
     </div>
     <div class="perf-badge" id="perf-badge">Jan – Aug 2026: simulated (backtested) performance &nbsp;·&nbsp; from Sep 2026: live account results</div>
     <div class="perf-tiles" id="perf-tiles"></div>
-    <div class="perf-chart"><canvas id="perf-canvas"></canvas></div>
+    <div class="perf-chart">
+      <div class="perf-chart-head">
+        <div class="perf-key"><span class="key-bt"></span>Simulated backtest<span class="key-live"></span>Live account</div>
+        <div class="perf-cum">Cumulative <b id="perf-cum"></b></div>
+      </div>
+      <canvas id="perf-canvas"></canvas>
+    </div>
     <div class="perf-cols">
       <div>
         <div class="perf-monthly" id="perf-monthly"></div>
@@ -578,11 +594,12 @@
   } catch (e) { /* globe is decorative; page works without it */ }
 </script>
 <script type="module">
-  // Track record: Jan-Sep 2026 backtest (data/backtest.json) + live MT5 feed (data/performance.json)
+  // Track record: backtest months (data/backtest.json) + live MT5 feed (data/performance.json)
   try {
-    const bt = await (await fetch('data/backtest.json', { cache: 'no-store' })).json();
+    const bust = `?v=${Date.now()}`;
+    const bt = await (await fetch(`data/backtest.json${bust}`, { cache: 'no-store' })).json();
     let live = null;
-    try { live = await (await fetch('data/performance.json', { cache: 'no-store' })).json(); } catch (e) {}
+    try { live = await (await fetch(`data/performance.json${bust}`, { cache: 'no-store' })).json(); } catch (e) {}
 
     const sec = document.getElementById('performance');
     sec.hidden = false;
@@ -591,29 +608,33 @@
     const cls = v => v >= 0 ? 'pos' : 'neg';
     const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-    // Combined monthly series (backtest flagged)
-    const monthly = bt.monthly.map(([ym, v]) => ({ ym, v, bt: true }));
-    const liveStart = live ? live.start.slice(0, 7) : '2026-10';
-    if (live) for (const [ym, v] of live.monthly) if (ym >= liveStart) monthly.push({ ym, v, bt: false });
+    // Backtest months never overlap live results
+    const liveStartYM = live ? live.start.slice(0, 7) : null;
+    const btMonths = bt.monthly.filter(([ym]) => !liveStartYM || ym < liveStartYM);
 
-    // Combined equity curve: compound the backtest months, then splice the live curve on the end
-    const pts = [{ t: new Date('2026-01-01T00:00:00Z'), v: 100, bt: true }];
+    const monthly = btMonths.map(([ym, v]) => ({ ym, v, bt: true }));
+    if (live) for (const [ym, v] of live.monthly) if (ym >= liveStartYM) monthly.push({ ym, v, bt: false });
+
+    // Equity curve points: kind = 'bt' (month-end backtest), 'gap' (live start), 'live' (daily close)
+    const pts = [{ t: Date.UTC(2026, 0, 1), v: 100, kind: 'bt' }];
     let cum = 100;
-    for (const m of bt.monthly) {
-      cum *= 1 + m[1] / 100;
-      const [y, mo] = m[0].split('-').map(Number);
-      pts.push({ t: new Date(Date.UTC(y, mo, 0)), v: cum, bt: true });
+    for (const [ym, r] of btMonths) {
+      cum *= 1 + r / 100;
+      const [y, mo] = ym.split('-').map(Number);
+      pts.push({ t: Date.UTC(y, mo, 0, 23, 59), v: cum, kind: 'bt' });
     }
     const btEnd = cum;
-    const hasLive = live && Array.isArray(live.equity) && live.equity.length > 1;
-    if (hasLive) for (let i = 1; i < live.equity.length; i++) {
-      const [t, v] = live.equity[i];
-      pts.push({ t: new Date(t), v: btEnd * v / 100, bt: false });
+    if (live && Array.isArray(live.equity) && live.equity.length) {
+      pts.push({ t: Date.parse(`${live.start}T00:00:00Z`), v: btEnd, kind: 'gap' });
+      for (let i = 1; i < live.equity.length; i++) {
+        const [d, v] = live.equity[i];
+        pts.push({ t: Date.parse(`${d}T23:59:00Z`), v: btEnd * v / 100, kind: 'live' });
+      }
     }
 
     // Stat tiles
     const vals = monthly.map(m => m.v);
-    const total = (pts[pts.length - 1].v - 100);
+    const total = pts[pts.length - 1].v - 100;
     const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
     const pos = vals.filter(v => v > 0).length;
     let peak = pts[0].v, maxDD = 0;
@@ -627,6 +648,10 @@
       tile4,
       [live ? `${MN[new Date(live.start).getUTCMonth()]} ${new Date(live.start).getUTCFullYear()}` : 'Sep 2026', 'Live results from', '']
     ].map(([v, l, c]) => `<div class="perf-tile"><b class="${c}">${v}</b><span>${l}</span></div>`).join('');
+
+    const cumEl = document.getElementById('perf-cum');
+    cumEl.textContent = fmtPct(total);
+    cumEl.className = cls(total);
 
     // Monthly grid (backtest months gold-marked, live months teal-marked)
     document.getElementById('perf-monthly').innerHTML = monthly.map(({ ym, v, bt }) => {
@@ -645,83 +670,98 @@
     document.getElementById('perf-updated').textContent =
       `Last updated ${new Date(live ? live.updated : Date.now()).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} · simulated Jan – Aug 2026 · live account results from 23 Sep 2026`;
 
-    // Equity curve (dashed = simulated backtest, solid = live)
+    // Equity curve: gold dashed = simulated backtest, teal solid = live account
     const canvas = document.getElementById('perf-canvas');
     const ctx = canvas.getContext('2d');
+    const GOLD = '#f6c453', TEAL = '#37e0b8', MUTED = '#9aa7bd';
+
+    function niceStep(range) {
+      const raw = range / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+      for (const m of [1, 2, 2.5, 5, 10]) if (m * mag >= raw) return m * mag;
+      return 10 * mag;
+    }
+
     function draw() {
-      const W = canvas.clientWidth, H = 320, dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const W = canvas.clientWidth, H = 300, dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
-      const padL = 46, padR = 16, padT = 18, padB = 30;
+      const padL = 44, padR = 10, padT = 12, padB = 28;
       const iw = W - padL - padR, ih = H - padT - padB;
-      let lo = Math.min(...pts.map(p => p.v)), hi = Math.max(...pts.map(p => p.v));
-      const span = Math.max(hi - lo, 1); lo -= span * 0.08; hi += span * 0.08;
-      const t0 = pts[0].t.getTime();
-      const t1 = Math.max(pts[pts.length - 1].t.getTime(), t0 + 1);
-      const X = p => padL + iw * (p.t.getTime() - t0) / (t1 - t0);
-      const Y = v => padT + ih * (1 - (v - lo) / (hi - lo));
 
-      // gridlines + y labels
-      ctx.strokeStyle = 'rgba(148,170,220,0.10)'; ctx.fillStyle = '#9aa7bd';
-      ctx.font = '11px Segoe UI'; ctx.textAlign = 'right'; ctx.lineWidth = 1;
-      for (let i = 0; i <= 4; i++) {
-        const v = lo + (hi - lo) * i / 4, y = Y(v);
+      // Time axis: 1 Jan to the end of the last point's month
+      const last = new Date(pts[pts.length - 1].t);
+      const t0 = pts[0].t, t1 = Date.UTC(last.getUTCFullYear(), last.getUTCMonth() + 1, 1);
+      const X = t => padL + iw * (t - t0) / (t1 - t0);
+
+      // Value axis: round percentage ticks that always include 0%
+      const pcts = pts.map(p => p.v - 100);
+      const minP = Math.min(0, ...pcts), maxP = Math.max(0, ...pcts);
+      const step = niceStep(Math.max(maxP - minP, 1));
+      const lo = Math.floor(minP / step) * step;
+      let hi = Math.ceil(maxP / step) * step;
+      if (hi - maxP < step * 0.2) hi += step;
+      const Y = p => padT + ih * (1 - (p - lo) / (hi - lo));
+      const dec = step % 1 === 0 ? 0 : 1;
+
+      ctx.font = '11px Segoe UI'; ctx.lineWidth = 1;
+      for (let p = lo; p <= hi + 1e-9; p += step) {
+        const y = Math.round(Y(p)) + 0.5;
+        ctx.strokeStyle = Math.abs(p) < 1e-9 ? 'rgba(148,170,220,0.30)' : 'rgba(148,170,220,0.08)';
         ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
-        ctx.fillText(`${(v - 100).toFixed(0) > 0 ? '+' : ''}${(v - 100).toFixed(0)}%`, padL - 8, y + 4);
+        ctx.fillStyle = MUTED; ctx.textAlign = 'right';
+        ctx.fillText(`${p > 1e-9 ? '+' : ''}${p.toFixed(dec)}%`, padL - 8, y + 4);
       }
-      // x labels: month starts
-      ctx.textAlign = 'center';
-      let lastM = -1;
-      pts.forEach(p => {
-        const m = p.t.getUTCMonth();
-        if (m !== lastM) { lastM = m; ctx.fillText(MN[m], X(p), H - 8); }
-      });
-      // baseline at 0%
-      ctx.strokeStyle = 'rgba(148,170,220,0.28)'; ctx.setLineDash([5, 5]);
-      ctx.beginPath(); ctx.moveTo(padL, Y(100)); ctx.lineTo(W - padR, Y(100)); ctx.stroke();
-      ctx.setLineDash([]);
 
-      // area fill under the whole curve
+      // Month labels centred under each month
+      ctx.textAlign = 'center'; ctx.fillStyle = MUTED;
+      for (let d = new Date(t0); d.getTime() < t1; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
+        const next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
+        ctx.fillText(MN[d.getUTCMonth()], (X(d.getTime()) + X(next)) / 2, H - 8);
+      }
+
+      // Faint tint over the live period
+      const gapPt = pts.find(p => p.kind === 'gap');
+      if (gapPt) {
+        ctx.fillStyle = 'rgba(55,224,184,0.06)';
+        ctx.fillRect(X(gapPt.t), padT, W - padR - X(gapPt.t), ih);
+      }
+
+      const path = list => { ctx.beginPath(); list.forEach((p, i) => i ? ctx.lineTo(X(p.t), Y(p.v - 100)) : ctx.moveTo(X(p.t), Y(p.v - 100))); };
+
+      // Area under the curve
       const grad = ctx.createLinearGradient(0, padT, 0, H - padB);
-      grad.addColorStop(0, 'rgba(246,196,83,0.20)'); grad.addColorStop(1, 'rgba(246,196,83,0)');
-      ctx.beginPath();
-      pts.forEach((p, i) => i ? ctx.lineTo(X(p), Y(p.v)) : ctx.moveTo(X(p), Y(p.v)));
-      ctx.lineTo(X(pts[pts.length - 1]), H - padB); ctx.lineTo(X(pts[0]), H - padB); ctx.closePath();
+      grad.addColorStop(0, 'rgba(246,196,83,0.16)'); grad.addColorStop(1, 'rgba(246,196,83,0)');
+      path(pts);
+      ctx.lineTo(X(pts[pts.length - 1].t), Y(lo)); ctx.lineTo(X(pts[0].t), Y(lo)); ctx.closePath();
       ctx.fillStyle = grad; ctx.fill();
 
-      // backtest segment: dashed gold
-      const btPts = pts.filter(p => p.bt);
-      ctx.beginPath();
-      btPts.forEach((p, i) => i ? ctx.lineTo(X(p), Y(p.v)) : ctx.moveTo(X(p), Y(p.v)));
-      ctx.strokeStyle = 'rgba(246,196,83,0.85)'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
-      ctx.setLineDash([7, 6]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
 
-      // live segment: solid gold, continuing from the last backtest point
-      const livePts = [btPts[btPts.length - 1], ...pts.filter(p => !p.bt)];
-      if (livePts.length > 1) {
-        ctx.beginPath();
-        livePts.forEach((p, i) => i ? ctx.lineTo(X(p), Y(p.v)) : ctx.moveTo(X(p), Y(p.v)));
-        ctx.strokeStyle = '#f6c453'; ctx.lineWidth = 2.6; ctx.stroke();
+      // Backtest: dashed gold
+      const btPts = pts.filter(p => p.kind === 'bt');
+      path(btPts);
+      ctx.strokeStyle = GOLD; ctx.lineWidth = 2; ctx.setLineDash([6, 5]); ctx.stroke(); ctx.setLineDash([]);
+
+      // No-trading gap between the last backtest month and the live start: faint connector
+      if (gapPt) {
+        path([btPts[btPts.length - 1], gapPt]);
+        ctx.strokeStyle = 'rgba(148,170,220,0.35)'; ctx.lineWidth = 1.2; ctx.setLineDash([2, 4]); ctx.stroke(); ctx.setLineDash([]);
       }
 
-      // transition marker where live results begin
-      const tp = btPts[btPts.length - 1], tx = X(tp), ty = Y(tp.v);
-      ctx.strokeStyle = 'rgba(55,224,184,0.35)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
-      ctx.beginPath(); ctx.moveTo(tx, padT); ctx.lineTo(tx, H - padB); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = '#37e0b8'; ctx.font = '600 10px Segoe UI'; ctx.textAlign = 'left';
-      ctx.fillText('LIVE →', Math.min(tx + 6, W - 52), padT + 10);
+      // Live: solid teal
+      const livePts = pts.filter(p => p.kind === 'gap' || p.kind === 'live');
+      if (livePts.length > 1) {
+        path(livePts);
+        ctx.strokeStyle = TEAL; ctx.lineWidth = 2.4; ctx.stroke();
+      }
 
-      // end dot + value chip
-      const lp = pts[pts.length - 1], lx = X(lp), ly = Y(lp.v);
-      ctx.fillStyle = '#f6c453'; ctx.beginPath(); ctx.arc(lx, ly, 4, 0, 7); ctx.fill();
-      const label = `${lp.v - 100 > 0 ? '+' : ''}${(lp.v - 100).toFixed(1)}%`;
-      ctx.font = '600 12px Segoe UI';
-      const tw = ctx.measureText(label).width + 14;
-      const bx = Math.min(lx - tw / 2, W - padR - tw), by = Math.max(ly - 32, 4);
-      ctx.fillStyle = 'rgba(246,196,83,0.14)'; ctx.strokeStyle = 'rgba(246,196,83,0.5)';
-      ctx.beginPath(); ctx.roundRect(bx, by, tw, 20, 6); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#f6c453'; ctx.textAlign = 'center'; ctx.fillText(label, bx + tw / 2, by + 14);
+      // End point
+      const lp = pts[pts.length - 1], lx = X(lp.t), ly = Y(lp.v - 100);
+      const endColor = lp.kind === 'bt' ? GOLD : TEAL;
+      ctx.fillStyle = lp.kind === 'bt' ? 'rgba(246,196,83,0.18)' : 'rgba(55,224,184,0.18)';
+      ctx.beginPath(); ctx.arc(lx, ly, 7, 0, 7); ctx.fill();
+      ctx.fillStyle = endColor; ctx.beginPath(); ctx.arc(lx, ly, 3.5, 0, 7); ctx.fill();
     }
     draw(); addEventListener('resize', draw);
   } catch (e) { /* section stays hidden without data */ }

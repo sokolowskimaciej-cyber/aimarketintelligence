@@ -131,6 +131,7 @@ def main():
         run("git", "add", "data/performance.json")
         if subprocess.run(("git", "diff", "--cached", "--quiet"), cwd=SITE_DIR).returncode:
             run("git", "commit", "-m", "Update performance data")
+            run("git", "pull", "--rebase")  # pick up site edits made elsewhere before pushing
             run("git", "push")
             print("Pushed to GitHub - site updates in ~1 minute")
         else:
