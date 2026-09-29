@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-29T06:00:03+00:00",
+  "updated": "2026-09-29T07:00:03+00:00",
   "start": "2026-09-23",
   "equity": [
     [
@@ -28,23 +28,35 @@
     ],
     [
       "2026-09-29",
-      97.8
+      97.54
     ]
   ],
   "stats": {
-    "totalReturnPct": -2.2,
-    "maxDrawdownPct": -2.2,
-    "winRatePct": 33,
-    "profitFactor": 0.68,
-    "trades": 85
+    "totalReturnPct": -2.5,
+    "maxDrawdownPct": -2.5,
+    "winRatePct": 32,
+    "profitFactor": 0.66,
+    "trades": 87
   },
   "monthly": [
     [
       "2026-09",
-      -2.2
+      -2.5
     ]
   ],
   "trades": [
+    [
+      "2026-09-29",
+      "BTCUSD",
+      "Sell",
+      -0.14
+    ],
+    [
+      "2026-09-29",
+      "JPN225",
+      "Sell",
+      -0.13
+    ],
     [
       "2026-09-29",
       "USDJPY",
@@ -104,18 +116,6 @@
       "USDJPY",
       "Sell",
       -0.17
-    ],
-    [
-      "2026-09-28",
-      "NAS100",
-      "Buy",
-      -0.18
-    ],
-    [
-      "2026-09-28",
-      "NAS100",
-      "Buy",
-      -0.12
     ]
   ]
 }
